@@ -9,10 +9,10 @@ export default function NotificationScreen() {
   return (
     <View style={styles.container}>
       {notifications.length === 0 ? (
-        <Text style={styles.emptyText}>No new notifications.</Text>
+        <Text style={styles.emptyText}>There is no notification here.</Text>
       ) : (
         <FlatList
-          data={notifications.slice().reverse()} // Reverse the array before passing it to FlatList
+          data={notifications.slice().reverse()}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <View style={styles.notificationCard}>
@@ -27,18 +27,31 @@ export default function NotificationScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
-  emptyText: { textAlign: "center", marginTop: 20, fontSize: 18 },
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#6200ea",
+  },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 20,
+    fontSize: 18,
+    color: "#ffffff",
+  },
   notificationCard: {
     padding: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#28a745",
     marginVertical: 8,
     borderRadius: 8,
   },
-  notificationText: { fontSize: 16 },
+  notificationText: {
+    fontSize: 16,
+    color: "#ffffff",
+    fontWeight: "bold",
+  },
   dateText: {
     fontSize: 12,
-    color: "gray",
+    color: "#d4f5dc",
     marginTop: 5,
   },
 });

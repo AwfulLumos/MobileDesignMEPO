@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { useNotifications } from "../contexts/NotificationContext"; // adjust path if needed
+import { useNotifications } from "../contexts/NotificationContext";
 import React, { useState, useRef } from "react";
 import {
   View,
@@ -102,6 +102,7 @@ const AuctionScreen = () => {
   const animation = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get("window").width;
   const screenHeight = Dimensions.get("window").height;
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -122,6 +123,7 @@ const AuctionScreen = () => {
       "You have pre-registered for all auctions, please stand by for the date of the auction at the office of the MEPO."
     );
     console.log("Pre-Register clicked for all auctions");
+    setSuccessModalVisible(true);
   };
 
   const handleImagePress = (image) => {
@@ -136,30 +138,7 @@ const AuctionScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalBackground}>
-          <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-          {selectedImage && (
-            <Image
-              source={selectedImage}
-              style={{
-                width: screenWidth * 0.9,
-                height: screenHeight * 0.6,
-                borderRadius: 10,
-              }}
-              resizeMode="contain"
-            />
-          )}
-        </View>
-      </Modal>
-
+      {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={toggleExpand} style={styles.headerRow}>
           <Text style={styles.header}>Auction Page</Text>
@@ -180,6 +159,54 @@ const AuctionScreen = () => {
         </Animated.View>
       </View>
 
+      {/* Success Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={successModalVisible}
+        onRequestClose={() => setSuccessModalVisible(false)}
+      >
+        <View style={styles.successModalBackground}>
+          <View style={styles.successModalContent}>
+            <Text style={styles.successMessage}>
+              Pre-registered successfully!{"\n"}See notifications to check.
+            </Text>
+            <TouchableOpacity
+              style={styles.closeSuccessButton}
+              onPress={() => setSuccessModalVisible(false)}
+            >
+              <Text style={styles.closeSuccessButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* View Image Modal (MISSING PART added here) */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalBackground}>
+          <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+            <Text style={styles.closeButtonText}>×</Text>
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image
+              source={selectedImage}
+              style={{
+                width: screenWidth * 0.9,
+                height: screenHeight * 0.6,
+                borderRadius: 10,
+              }}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
+
+      {/* Stall Cards */}
       <FlatList
         data={auctions}
         keyExtractor={(item) => item.id}
@@ -207,18 +234,26 @@ const AuctionScreen = () => {
                   </View>
                 </TouchableOpacity>
                 <View style={styles.detailsContainer}>
-                  <Text style={styles.stallName}>Stall #{item.stall_no}</Text>
                   <Text style={styles.details}>
-                    📍 {item.zone}, {item.floor_level}, {item.section}
+                    <Text style={{ fontWeight: "600" }}>Location: </Text>
+                    {item.zone}, {item.floor_level}, {item.section}
                   </Text>
                   <Text style={styles.details}>
-                    📏 {item.width} x {item.height}
+                    <Text style={{ fontWeight: "600" }}>Width x Height: </Text>
+                    {item.width} x {item.height}
                   </Text>
-                  <Text style={styles.details}>💰 {item.starting_bid}</Text>
                   <Text style={styles.details}>
-                    🔼 {item.minimum_increment}
+                    <Text style={{ fontWeight: "600" }}>Starting Bid: </Text>
+                    {item.starting_bid}
                   </Text>
-                  <Text style={styles.details}>📅 {item.auction_date}</Text>
+                  <Text style={styles.details}>
+                    <Text style={{ fontWeight: "600" }}>Min Increment: </Text>
+                    {item.minimum_increment}
+                  </Text>
+                  <Text style={styles.details}>
+                    <Text style={{ fontWeight: "600" }}>Auction Date: </Text>
+                    {item.auction_date}
+                  </Text>
                 </View>
               </View>
               <Text style={styles.description}>{item.description}</Text>
@@ -249,18 +284,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  toggleIcon: {
-    fontSize: 15,
-    color: "#ffffff",
-  },
-  header: {
-    fontSize: 17,
-    fontWeight: "bold",
-    color: "#ffffff",
-  },
-  descriptionContainer: {
-    overflow: "hidden",
-  },
+  toggleIcon: { fontSize: 15, color: "#ffffff" },
+  header: { fontSize: 17, fontWeight: "bold", color: "#ffffff" },
+  descriptionContainer: { overflow: "hidden" },
   preRegisterButton: {
     backgroundColor: "#28a745",
     padding: 12,
@@ -268,11 +294,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
   },
-  preRegisterButtonText: {
-    fontSize: 15,
-    color: "#ffffff",
-    fontWeight: "bold",
-  },
+  preRegisterButtonText: { fontSize: 15, color: "#ffffff", fontWeight: "bold" },
   card: {
     backgroundColor: "#ffffff",
     padding: 10,
@@ -283,16 +305,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  rowContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 5,
-    marginRight: 10,
-  },
+  rowContainer: { flexDirection: "row", alignItems: "center" },
+  image: { width: 100, height: 100, borderRadius: 5, marginRight: 10 },
   imageOverlay: {
     position: "absolute",
     bottom: 10,
@@ -305,33 +319,11 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderRadius: 3,
   },
-  viewText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  detailsContainer: {
-    flex: 1,
-  },
-  stallName: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#000000",
-  },
-  details: {
-    fontSize: 14,
-    color: "#000000",
-  },
-  description: {
-    fontSize: 14,
-    color: "#000000",
-    marginTop: 10,
-  },
-  auction_description: {
-    fontSize: 14,
-    color: "#ffffff",
-    marginTop: 10,
-  },
+  viewText: { color: "white", fontSize: 12, fontWeight: "bold" },
+  detailsContainer: { flex: 1 },
+  details: { fontSize: 14, color: "#000000", marginBottom: 3 },
+  description: { fontSize: 14, color: "#000000", marginTop: 10 },
+  auction_description: { fontSize: 14, color: "#ffffff", marginTop: 10 },
   modalBackground: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.85)",
@@ -350,11 +342,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 1,
   },
-  closeButtonText: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
+  closeButtonText: { color: "white", fontSize: 20, fontWeight: "bold" },
+  successModalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
+  successModalContent: {
+    width: 300,
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  successMessage: {
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#28a745",
+  },
+  closeSuccessButton: {
+    backgroundColor: "#28a745",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  closeSuccessButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
 
 export default AuctionScreen;

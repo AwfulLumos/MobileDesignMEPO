@@ -8,8 +8,7 @@ export const NotificationProvider = ({ children }) => {
 
   const addNotification = (message) => {
     // Get the current date and time when the notification is added
-    const date = new Date().toLocaleString(); // You can format this as you like
-
+    const date = new Date().toLocaleString();
     // Add notification with the message and the timestamp
     setNotifications((prev) => [...prev, { id: Date.now(), message, date }]);
   };
