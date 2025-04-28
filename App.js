@@ -2,12 +2,15 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
+import { createDrawerNavigator } from "@react-navigation/drawer";
 import {
   NavigationContainer,
   getFocusedRouteNameFromRoute,
 } from "@react-navigation/native";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
+import { Text, Image } from "react-native";
 
 // Import Screens
 import DashboardScreen from "./components/DashboardScreen";
@@ -16,13 +19,15 @@ import IMessageScreen from "./components/IMessageScreen";
 import AuctionScreen from "./components/AuctionScreen";
 import MessagingPage from "./components/MessagingPage";
 import NotificationScreen from "./components/NotificationScreen";
+import ProfileScreen from "./components/ProfileScreen";
 
 // Import Notification Context
 import { NotificationProvider } from "./contexts/NotificationContext";
 
-// Create navigation containers
+// Navigation containers
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+const Drawer = createDrawerNavigator();
 
 // Helper function to get icon name based on route
 const getTabIcon = (routeName) => {
@@ -69,56 +74,166 @@ const BottomTabs = () => (
   </Tab.Navigator>
 );
 
+// Drawer Content
+const DrawerContent = (props) => (
+  <View style={{ flex: 1, backgroundColor: "#6200ea" }}>
+    <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
+      {/* User Info Section */}
+      <View style={{ alignItems: "center", paddingVertical: 20 }}>
+        <Image
+          source={{
+            uri: "https://i.gifer.com/origin/c8/c8d864187433ac0cc77a5a2e057d52d4_w200.gif",
+          }}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            marginBottom: 10,
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          }}
+        />
+        <Text style={{ color: "white", fontSize: 14, fontWeight: "bold" }}>
+          Awful Lumos
+        </Text>
+        <Text style={{ color: "white", fontSize: 12, fontWeight: "400" }}>
+          Satellite Market Stallholder
+        </Text>
+      </View>
+
+      {/* Drawer Items */}
+      <DrawerItem
+        label="Dashboard"
+        onPress={() => props.navigation.navigate("Dashboard")}
+        labelStyle={{ color: "white", fontSize: 14, fontWeight: "bold" }}
+        style={{
+          borderRadius: 10,
+        }}
+      />
+      <DrawerItem
+        label="Profile"
+        onPress={() => props.navigation.navigate("Profile")}
+        labelStyle={{ color: "white", fontSize: 14, fontWeight: "bold" }}
+        style={{
+          borderRadius: 10,
+        }}
+      />
+
+      {/* Spacer to push logout at the bottom */}
+      <View style={{ flex: 1 }} />
+
+      {/* Logout Button */}
+      <TouchableOpacity
+        style={{
+          backgroundColor: "#e53935",
+          paddingVertical: 10,
+          marginHorizontal: 20,
+          borderRadius: 5,
+          marginBottom: 20,
+          alignItems: "center",
+        }}
+        onPress={() => console.log("Logout pressed")}
+      >
+        <Text style={{ color: "white", fontSize: 14, fontWeight: "bold" }}>
+          Logout
+        </Text>
+      </TouchableOpacity>
+    </DrawerContentScrollView>
+  </View>
+);
+
+// Main Stack Navigator
+const MainStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen
+      name="MainTabs"
+      component={BottomTabs}
+      options={({ route, navigation }) => {
+        const routeName = getFocusedRouteNameFromRoute(route) ?? "Dashboard";
+        return {
+          headerShown: true,
+          headerTitle: routeName,
+          headerTitleAlign: "center",
+          headerLeft: () => (
+            <TouchableOpacity
+              style={{ marginLeft: 15 }}
+              onPress={() => navigation.openDrawer()}
+            >
+              <Icon name="menu" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <TouchableOpacity
+              style={{ marginRight: 15 }}
+              onPress={() => navigation.navigate("Notification")}
+            >
+              <Icon name="bell-outline" size={24} color="#000" />
+            </TouchableOpacity>
+          ),
+        };
+      }}
+    />
+    <Stack.Screen
+      name="MessagingPage"
+      component={MessagingPage}
+      options={{
+        headerShown: true,
+        headerTitle: "Chat",
+        headerTitleAlign: "center",
+      }}
+    />
+    <Stack.Screen
+      name="Notification"
+      component={NotificationScreen}
+      options={{
+        headerShown: true,
+        headerTitle: "Notification",
+        headerTitleAlign: "center",
+      }}
+    />
+  </Stack.Navigator>
+);
+
 // Main App Navigation
 export default function App() {
   return (
     <NotificationProvider>
       <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen
-            name="MainTabs"
-            component={BottomTabs}
-            options={({ route, navigation }) => {
-              const routeName =
-                getFocusedRouteNameFromRoute(route) ?? "Dashboard";
-              return {
-                headerShown: true,
-                headerTitle: routeName,
-                headerTitleAlign: "center",
-                headerRight: () => (
-                  <TouchableOpacity
-                    style={{ marginRight: 15 }}
-                    onPress={() => navigation.navigate("Notification")}
-                  >
-                    <Icon name="bell-outline" size={24} color="#000" />
-                  </TouchableOpacity>
-                ),
-              };
-            }}
-          />
+        {/* Drawer is now the root navigator */}
+        <Drawer.Navigator
+          screenOptions={{
+            headerShown: false,
+            drawerStyle: {
+              width: 220,
+              backgroundColor: "#3700b3",
+            },
+            drawerActiveTintColor: "#bb86fc",
+            drawerInactiveTintColor: "#ffffff",
+            drawerLabelStyle: {
+              fontSize: 16,
+              fontWeight: "bold",
+            },
+            drawerItemStyle: {
+              borderRadius: 0,
+              marginHorizontal: 0,
+            },
+          }}
+          drawerContent={(props) => <DrawerContent {...props} />}
+        >
+          {/* Main Stack (Tabs + Modal Screens) */}
+          <Drawer.Screen name="Dashboard" component={MainStack} />
 
-          {/* Messaging Page */}
-          <Stack.Screen
-            name="MessagingPage"
-            component={MessagingPage}
+          {/* Profile Screen */}
+          <Drawer.Screen
+            name="Profile"
+            component={ProfileScreen}
             options={{
               headerShown: true,
-              headerTitle: "Chat",
+              headerTitle: "Profile",
               headerTitleAlign: "center",
             }}
           />
-
-          {/* Notifications Page */}
-          <Stack.Screen
-            name="Notification"
-            component={NotificationScreen}
-            options={{
-              headerShown: true,
-              headerTitle: "Notification",
-              headerTitleAlign: "center",
-            }}
-          />
-        </Stack.Navigator>
+        </Drawer.Navigator>
       </NavigationContainer>
     </NotificationProvider>
   );

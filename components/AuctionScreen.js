@@ -181,7 +181,7 @@ const AuctionScreen = () => {
         </View>
       </Modal>
 
-      {/* View Image Modal (MISSING PART added here) */}
+      {/* View Image Modal */}
       <Modal
         animationType="fade"
         transparent={true}
