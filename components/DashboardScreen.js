@@ -1,6 +1,5 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable no-undef */
-/* eslint-disable prettier/prettier */
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,

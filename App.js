@@ -20,6 +20,7 @@ import AuctionScreen from "./components/AuctionScreen";
 import MessagingPage from "./components/MessagingPage";
 import NotificationScreen from "./components/NotificationScreen";
 import ProfileScreen from "./components/ProfileScreen";
+import EditProfileScreen from "./components/EditProfileScreen";
 
 // Import Notification Context
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -28,6 +29,7 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
+const ProfileStack = createStackNavigator(); // Separate stack for Profile
 
 // Helper function to get icon name based on route
 const getTabIcon = (routeName) => {
@@ -44,6 +46,46 @@ const getTabIcon = (routeName) => {
       return "circle";
   }
 };
+
+// Profile Stack Navigator (Profile and Edit Profile)
+const ProfileStackNavigator = () => (
+  <ProfileStack.Navigator>
+    <ProfileStack.Screen
+      name="ProfileMain"
+      component={ProfileScreen}
+      options={({ navigation }) => ({
+        headerShown: false, // header na may lapis to kanina.
+        headerTitle: "Profile",
+        headerTitleAlign: "center",
+        headerLeft: () => (
+          <TouchableOpacity
+            style={{ marginLeft: 15 }}
+            onPress={() => navigation.openDrawer()}
+          >
+            <Icon name="menu" size={24} color="#000" />
+          </TouchableOpacity>
+        ),
+        headerRight: () => (
+          <TouchableOpacity
+            style={{ marginRight: 15 }}
+            onPress={() => navigation.navigate("EditProfile")}
+          >
+            <Icon name="pencil" size={24} color="#000" />
+          </TouchableOpacity>
+        ),
+      })}
+    />
+    <ProfileStack.Screen
+      name="EditProfile"
+      component={EditProfileScreen}
+      options={{
+        headerShown: false,
+        headerTitle: "Edit Profile",
+        headerTitleAlign: "center",
+      }}
+    />
+  </ProfileStack.Navigator>
+);
 
 // Bottom Tabs
 const BottomTabs = () => (
@@ -191,6 +233,15 @@ const MainStack = () => (
         headerTitleAlign: "center",
       }}
     />
+    <Stack.Screen
+      name="EditProfile"
+      component={EditProfileScreen}
+      options={{
+        headerShown: true,
+        headerTitle: "Edit Profile",
+        headerTitleAlign: "center",
+      }}
+    />
   </Stack.Navigator>
 );
 
@@ -223,14 +274,12 @@ export default function App() {
           {/* Main Stack (Tabs + Modal Screens) */}
           <Drawer.Screen name="Dashboard" component={MainStack} />
 
-          {/* Profile Screen */}
+          {/* Profile Screen with its own stack for EditProfile */}
           <Drawer.Screen
             name="Profile"
-            component={ProfileScreen}
+            component={ProfileStackNavigator}
             options={{
               headerShown: true,
-              headerTitle: "Profile",
-              headerTitleAlign: "center",
             }}
           />
         </Drawer.Navigator>

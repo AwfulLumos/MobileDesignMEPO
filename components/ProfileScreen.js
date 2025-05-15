@@ -1,19 +1,94 @@
 /* eslint-disable prettier/prettier */
-import React from "react";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import React, { useState, useEffect } from "react";
 import {
+  TouchableOpacity,
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Image,
   ScrollView,
 } from "react-native";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import supabase from "../supabaseClient";
 
 const ProfileScreen = ({ navigation }) => {
+  const [profileData, setProfileData] = useState(null);
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      const { data, error } = await supabase
+        .from("applicant")
+        .select(
+          `
+        *,
+        registrant!fk_applicant_registration (
+         registration_id,
+          full_name,
+          address,
+          contact_number,
+          user_name
+        ),
+        stall (
+          stall_no,
+          stall_location,
+          description,
+          auction_date
+        )
+      `
+        )
+        .eq("registration_id", "1");
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const applicant = data[0];
+
+        // Simulate subscription valid until +1 year after auction
+        const auctionDate = new Date(
+          applicant.stall?.auction_date || new Date()
+        );
+        const subscriptionDate = new Date(auctionDate);
+        subscriptionDate.setFullYear(auctionDate.getFullYear() + 1);
+
+        setProfileData({
+          registrant_id: applicant.registrant?.id,
+          name: applicant.registrant?.full_name,
+          address: applicant.registrant?.address,
+          contact: applicant.registrant?.contact_number,
+          username: applicant.registrant?.user_name,
+
+          birthDate: applicant.registrant_birth_date,
+          civilStatus: applicant.registrant_civil_status,
+          education: applicant.registrant_educational_attainment,
+          businessNature: applicant.nature_of_business,
+          capitalization: applicant.capitalization,
+          sourceOfCapital: applicant.source_of_capital,
+
+          stallNo: applicant.stall?.stall_no,
+          stallLocation: applicant.stall?.stall_location,
+          stallDescription: applicant.stall?.description,
+          subscriptionEnd: subscriptionDate.toLocaleDateString(),
+        });
+      }
+    };
+
+    fetchProfileData();
+  }, []);
+
+  if (!profileData) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ textAlign: "center", marginTop: 220 }}>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
-      {/* Profile Picture and Name */}
+      {/* Header */}
       <View style={styles.profileHeader}>
         <Image
           source={{
@@ -21,110 +96,140 @@ const ProfileScreen = ({ navigation }) => {
           }}
           style={styles.profileImage}
         />
-        <Text style={styles.profileName}>Awful Lumos</Text>
+        <Text style={styles.profileName}>{profileData.name}</Text>
         <Text style={styles.profileRole}>Satellite Market Stallholder</Text>
+
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() =>
+            navigation.navigate("Profile", {
+              screen: "EditProfile",
+              params: { profileData },
+            })
+          }
+        >
+          <Icon name="pencil" size={18} color="#ffffff" />
+          <Text style={styles.editButtonText}>Edit Profile</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Profile Information */}
-      {/* Profile Information */}
-      <View style={styles.profileInfo}>
-        {/* Registrant Info */}
-        <Text style={styles.sectionTitle}>Registrant Information</Text>
-        <Text style={styles.label}>Full Name: Awful M. Lumos</Text>
-        <Text style={styles.label}>
-          Address: Block 30 Lot 10, Zone 5, Barangay Concepcion Pequeña, Naga
-          City, Camarines Sur, 4400, Philippines
-        </Text>
-        <Text style={styles.label}>Contact Number: 09123456789</Text>
-        <Text style={styles.label}>Username: awful_lumos_30</Text>
+      {/* Profile Data */}
+      <View style={styles.infoCard}>
+        <Text style={styles.sectionTitle}>Registration Information</Text>
+        <Text style={styles.label}>Full Name: {profileData.name}</Text>
+        <Text style={styles.label}>Address: {profileData.address}</Text>
+        <Text style={styles.label}>Contact Number: {profileData.contact}</Text>
+        <Text style={styles.label}>Username: {profileData.username}</Text>
         <Text style={styles.label}>Password: **********</Text>
 
-        {/* Applicant Info */}
         <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
-          Applicant Information
+          Application Information
         </Text>
-        <Text style={styles.label}>Birth Date: 01/01/1995</Text>
-        <Text style={styles.label}>Civil Status: Single</Text>
+        <Text style={styles.label}>Birth Date: {profileData.birthDate}</Text>
         <Text style={styles.label}>
-          Educational Attainment: College Graduate
+          Civil Status: {profileData.civilStatus}
         </Text>
-        <Text style={styles.label}>Nature of Business: Dry Goods Retail</Text>
-        <Text style={styles.label}>Capitalization: ₱10,000</Text>
-        <Text style={styles.label}>Source of Capital: Personal Savings</Text>
+        <Text style={styles.label}>
+          Educational Attainment: {profileData.education}
+        </Text>
+        <Text style={styles.label}>
+          Nature of Business: {profileData.businessNature}
+        </Text>
+        <Text style={styles.label}>
+          Capitalization: ₱{profileData.capitalization}
+        </Text>
+        <Text style={styles.label}>
+          Source of Capital: {profileData.sourceOfCapital}
+        </Text>
 
-        {/* Stallholder Subscription */}
+        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
+          Stall Information
+        </Text>
+        <Text style={styles.label}>Stall No: {profileData.stallNo}</Text>
+        <Text style={styles.label}>Location: {profileData.stallLocation}</Text>
+        <Text style={styles.label}>
+          Description: {profileData.stallDescription}
+        </Text>
+
         <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
           Subscription Details
         </Text>
-        <Text style={styles.label}>Subscription Valid Until: 25/05/2025</Text>
+        <Text style={styles.label}>
+          Valid Until: {profileData.subscriptionEnd}
+        </Text>
       </View>
-
-      {/* Edit Button */}
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => navigation.navigate("EditProfile")}
-      >
-        <Icon name="pencil" size={16} color="#fff" />
-        <Text style={styles.editButtonText}>Edit Profile</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f4f4f4",
-    padding: 20,
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
   profileHeader: {
     alignItems: "center",
-    marginVertical: 20,
+    backgroundColor: "#002181",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
   },
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    borderWidth: 2,
-    borderColor: "#6200ea",
+    borderRadius: 55,
+    borderWidth: 3,
+    borderColor: "#fff",
     marginBottom: 10,
   },
-  profileName: {
-    fontSize: 18,
+  profileName: { fontSize: 17, fontWeight: "bold", color: "#fff" },
+  profileRole: { fontSize: 14, color: "#e0e0e0", marginTop: 4 },
+  sectionTitle: {
+    fontSize: 15,
     fontWeight: "bold",
     color: "#6200ea",
-  },
-  profileRole: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 5,
-  },
-  profileInfo: {
-    marginBottom: 30,
+    marginBottom: 10,
   },
   label: {
-    fontSize: 15,
-    marginVertical: 5,
+    fontSize: 14,
+    marginBottom: 8,
+    color: "#333",
+    lineHeight: 22,
+    paddingLeft: 10,
+  },
+  infoCard: {
+    backgroundColor: "#f8f8f8",
+    borderRadius: 10,
+    padding: 15,
+    marginHorizontal: 15,
+    marginTop: 20,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   editButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#6200ea",
-    paddingVertical: 10,
+    justifyContent: "center",
+    backgroundColor: "#28a745",
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 5,
+    borderRadius: 20,
+    marginVertical: 20,
+    marginHorizontal: 20,
     alignSelf: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   editButtonText: {
     color: "#fff",
     fontSize: 15,
-    marginLeft: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#6200ea",
-    marginBottom: 10,
+    marginLeft: 5,
+    fontWeight: "600",
   },
 });
 
