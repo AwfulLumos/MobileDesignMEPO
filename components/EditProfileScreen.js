@@ -19,6 +19,7 @@ const EditProfileScreen = ({ navigation, route }) => {
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -29,6 +30,7 @@ const EditProfileScreen = ({ navigation, route }) => {
       setAddress(profile.address || "");
       setContact(profile.contact || "");
       setUsername(profile.username || "");
+      setPassword(profile.password || "");
     }
   }, [profile]);
 
@@ -48,6 +50,7 @@ const EditProfileScreen = ({ navigation, route }) => {
           address: address,
           contact_number: contact,
           user_name: username,
+          password: password,
         })
         .eq("registration_id", "1");
 
@@ -63,7 +66,6 @@ const EditProfileScreen = ({ navigation, route }) => {
         navigation.goBack();
       }, 2000);
 
-      // Optional: still keep an alert
       Alert.alert("Success", "Your profile was updated.");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -125,6 +127,17 @@ const EditProfileScreen = ({ navigation, route }) => {
           placeholder="Username"
           value={username}
           onChangeText={(text) => setUsername(text.trim())}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
         />
       </View>
 

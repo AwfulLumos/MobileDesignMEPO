@@ -8,15 +8,40 @@ import {
   FlatList,
   StyleSheet,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Icon from "react-native-vector-icons/Feather";
+import { Alert } from "react-native";
 
 const MessagingPage = ({ route }) => {
   const { sender } = route.params;
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [isDarkMode, setIsDarkMode] = useState(false); // Dark mode state
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const flatListRef = useRef(null);
 
-  const sendMessage = () => {
+  // Load messages from AsyncStorage
+  useEffect(() => {
+    const loadMessages = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(`messages_${sender}`);
+        if (stored) {
+          setMessages(JSON.parse(stored));
+        }
+      } catch (error) {
+        console.error("Failed to load messages", error);
+      }
+    };
+    loadMessages();
+  }, [sender]);
+
+  // Scroll to end after new message
+  useEffect(() => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: false });
+    }
+  }, [messages]);
+
+  const sendMessage = async () => {
     if (message.trim() === "") return;
 
     const newMessage = {
@@ -26,38 +51,52 @@ const MessagingPage = ({ route }) => {
       timestamp: new Date().toLocaleTimeString(),
     };
 
-    setMessages([...messages, newMessage]);
-    setMessage(""); // Clear input field after sending
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
+    setMessage("");
+
+    try {
+      await AsyncStorage.setItem(
+        `messages_${sender}`,
+        JSON.stringify(updatedMessages)
+      );
+    } catch (error) {
+      console.error("Failed to save message", error);
+    }
   };
 
-  useEffect(() => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({ animated: false });
+  const clearMessages = async () => {
+    try {
+      const key = `messages_${sender}`;
+      await AsyncStorage.removeItem(key); // delete from storage
+      setMessages([]); // clear from state
+      // Show success alert
+      Alert.alert("Success", "All chats have been cleared.");
+    } catch (error) {
+      console.error("Error clearing messages: ", error);
     }
-  }, [messages]);
+  };
 
-  // Toggle Dark Mode
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
   };
 
   return (
     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
-      {/* Header with Dark Mode Toggle */}
       <View style={[styles.headerContainer, isDarkMode && styles.darkHeader]}>
         <Text style={[styles.header, isDarkMode && styles.darkHeaderText]}>
           {sender}
         </Text>
-        <TouchableOpacity onPress={toggleDarkMode}>
-          <Text
-            style={[styles.darkModeText, isDarkMode && styles.darkHeaderText]}
-          >
-            {isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", gap: 15 }}>
+          <TouchableOpacity onPress={toggleDarkMode} style={styles.iconCard}>
+            <Icon name={isDarkMode ? "sun" : "moon"} size={20} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={clearMessages} style={styles.iconCard}>
+            <Icon name="trash-2" size={20} color="#000" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Message List */}
       <View style={styles.messageListContainer}>
         <FlatList
           ref={flatListRef}
@@ -96,7 +135,6 @@ const MessagingPage = ({ route }) => {
         />
       </View>
 
-      {/* Message Input & Send Button */}
       <View
         style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}
       >
@@ -141,10 +179,24 @@ const styles = StyleSheet.create({
   darkHeaderText: {
     color: "#fff",
   },
-  darkModeText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
+  iconCard: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#000",
+    borderRadius: 8,
+    padding: 8,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   messageListContainer: {
     flex: 1,

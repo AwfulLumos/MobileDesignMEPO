@@ -1,51 +1,54 @@
 /* eslint-disable import/no-unresolved */
 import React from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import {
   NavigationContainer,
   getFocusedRouteNameFromRoute,
 } from "@react-navigation/native";
-import { TouchableOpacity, View } from "react-native";
+import { TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
-import { Text, Image } from "react-native";
 
-// Import Screens
-import DashboardScreen from "./components/DashboardScreen";
-import DocumentScreen from "./components/DocumentScreen";
-import IMessageScreen from "./components/IMessageScreen";
-import AuctionScreen from "./components/AuctionScreen";
+// Import custom navigation components
+import { BottomTabs, DrawerContent } from "./navbars/NavigationComponents";
+
+// Screen imports
 import MessagingPage from "./components/MessagingPage";
 import NotificationScreen from "./components/NotificationScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import EditProfileScreen from "./components/EditProfileScreen";
+import IMessageScreen from "./components/IMessageScreen";
 
-// Import Notification Context
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Navigation containers
-const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
-const ProfileStack = createStackNavigator(); // Separate stack for Profile
+const ProfileStack = createStackNavigator(); // stack for Profile
+const MessageStack = createStackNavigator();
 
-// Helper function to get icon name based on route
-const getTabIcon = (routeName) => {
-  switch (routeName) {
-    case "Dashboard":
-      return "view-dashboard";
-    case "Documents":
-      return "file-document";
-    case "i-Message":
-      return "message-text";
-    case "Auction":
-      return "gavel";
-    default:
-      return "circle";
-  }
-};
+const MessageStackNavigator = () => (
+  <MessageStack.Navigator>
+    <MessageStack.Screen
+      name="IMessageScreen"
+      component={IMessageScreen}
+      options={{
+        headerShown: true,
+        headerTitle: "i-Message",
+        headerTitleAlign: "center",
+      }}
+    />
+    <MessageStack.Screen
+      name="MessagingPage"
+      component={MessagingPage}
+      options={{
+        headerShown: true,
+        headerTitle: "Chat",
+        headerTitleAlign: "center",
+      }}
+    />
+  </MessageStack.Navigator>
+);
 
 // Profile Stack Navigator (Profile and Edit Profile)
 const ProfileStackNavigator = () => (
@@ -85,103 +88,6 @@ const ProfileStackNavigator = () => (
       }}
     />
   </ProfileStack.Navigator>
-);
-
-// Bottom Tabs
-const BottomTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ color, size }) => (
-        <Icon name={getTabIcon(route.name)} size={size} color={color} />
-      ),
-      tabBarActiveTintColor: "#6200ea",
-      tabBarInactiveTintColor: "gray",
-      tabBarStyle: {
-        backgroundColor: "#ffffff",
-        borderTopWidth: 1,
-        borderTopColor: "#ddd",
-        height: 60,
-      },
-      tabBarLabelStyle: {
-        fontSize: 12,
-        fontWeight: "bold",
-      },
-      headerShown: false,
-    })}
-  >
-    <Tab.Screen name="Dashboard" component={DashboardScreen} />
-    <Tab.Screen name="Documents" component={DocumentScreen} />
-    <Tab.Screen name="i-Message" component={IMessageScreen} />
-    <Tab.Screen name="Auction" component={AuctionScreen} />
-  </Tab.Navigator>
-);
-
-// Drawer Content
-const DrawerContent = (props) => (
-  <View style={{ flex: 1, backgroundColor: "#6200ea" }}>
-    <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
-      {/* User Info Section */}
-      <View style={{ alignItems: "center", paddingVertical: 20 }}>
-        <Image
-          source={{
-            uri: "https://i.gifer.com/origin/c8/c8d864187433ac0cc77a5a2e057d52d4_w200.gif",
-          }}
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            marginBottom: 10,
-            borderWidth: 2,
-            borderColor: "#ffffff",
-          }}
-        />
-        <Text style={{ color: "white", fontSize: 14, fontWeight: "bold" }}>
-          Awful Lumos
-        </Text>
-        <Text style={{ color: "white", fontSize: 12, fontWeight: "400" }}>
-          Satellite Market Stallholder
-        </Text>
-      </View>
-
-      {/* Drawer Items */}
-      <DrawerItem
-        label="Dashboard"
-        onPress={() => props.navigation.navigate("Dashboard")}
-        labelStyle={{ color: "white", fontSize: 14, fontWeight: "bold" }}
-        style={{
-          borderRadius: 10,
-        }}
-      />
-      <DrawerItem
-        label="Profile"
-        onPress={() => props.navigation.navigate("Profile")}
-        labelStyle={{ color: "white", fontSize: 14, fontWeight: "bold" }}
-        style={{
-          borderRadius: 10,
-        }}
-      />
-
-      {/* Spacer to push logout at the bottom */}
-      <View style={{ flex: 1 }} />
-
-      {/* Logout Button */}
-      <TouchableOpacity
-        style={{
-          backgroundColor: "#e53935",
-          paddingVertical: 10,
-          marginHorizontal: 20,
-          borderRadius: 5,
-          marginBottom: 20,
-          alignItems: "center",
-        }}
-        onPress={() => console.log("Logout pressed")}
-      >
-        <Text style={{ color: "white", fontSize: 14, fontWeight: "bold" }}>
-          Logout
-        </Text>
-      </TouchableOpacity>
-    </DrawerContentScrollView>
-  </View>
 );
 
 // Main Stack Navigator
@@ -280,6 +186,13 @@ export default function App() {
             component={ProfileStackNavigator}
             options={{
               headerShown: true,
+            }}
+          />
+          <Drawer.Screen
+            name="i-Message"
+            component={MessageStackNavigator}
+            options={{
+              headerShown: false,
             }}
           />
         </Drawer.Navigator>

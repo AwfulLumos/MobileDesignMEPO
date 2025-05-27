@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   headerContainer: {
-    backgroundColor: "#6200ea",
+    backgroundColor: "#002181",
     padding: 20,
     borderRadius: 5,
     marginBottom: 20,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   card: {
-    backgroundColor: "#002181",
+    backgroundColor: "#28a745",
     padding: 15,
     borderRadius: 5,
     marginBottom: 10,

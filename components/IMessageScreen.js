@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,20 @@ import {
   Animated,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const messages = [
   {
     id: "1",
-    sender: "MEPO Administrator",
-    message: "Your stall payment is due soon.",
-    time: "2 hours ago",
+    sender: "NCPM Administrator",
+    message: "Reminder: Renew your contract by end of the month.",
+    time: "1 day ago",
+  },
+  {
+    id: "2",
+    sender: "SATELLITE Administrator",
+    message: "A new auction is now open for bidding.",
+    time: "2 days ago",
   },
 ];
 
@@ -35,8 +42,29 @@ const IMessageScreen = () => {
 
   const heightInterpolation = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 70], 
+    outputRange: [0, 70],
   });
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.openDrawer()}
+          style={{ marginLeft: 15 }}
+        >
+          <Icon name="menu" size={24} color="#000" />
+        </TouchableOpacity>
+      ),
+      headerTitle: "I-Message",
+      headerStyle: {
+        backgroundColor: "#ffffff",
+      },
+      headerTitleStyle: {
+        fontWeight: "bold",
+        fontSize: 18,
+      },
+    });
+  }, [navigation]);
 
   return (
     <View style={styles.container}>

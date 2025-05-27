@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   TouchableOpacity,
   View,
@@ -10,33 +10,43 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import supabase from "../supabaseClient";
+import { useFocusEffect } from "@react-navigation/native";
 
 const ProfileScreen = ({ navigation }) => {
   const [profileData, setProfileData] = useState(null);
 
-  useEffect(() => {
-    const fetchProfileData = async () => {
+  // Extract the fetch function so it can be reused
+  const fetchProfileData = async () => {
+    try {
       const { data, error } = await supabase
         .from("applicant")
         .select(
           `
-        *,
-        registrant!fk_applicant_registration (
-         registration_id,
-          full_name,
-          address,
-          contact_number,
-          user_name
-        ),
-        stall (
-          stall_no,
-          stall_location,
-          description,
-          auction_date
+    *,
+    registrant!fk_applicant_registration (
+    registration_id,
+    full_name,
+    address,
+    contact_number,
+    user_name,
+    password
+    ),
+    stall (
+      stall_no,
+      stall_location,
+      description,
+      auction_date
+    ),
+    spouse_information (
+      spouse_full_name,
+      spouse_birth_date,
+      spouse_educational_attainment,
+      spouse_occupation,
+      names_of_children
+    )
+  `
         )
-      `
-        )
-        .eq("registration_id", "1");
+        .eq("registration_id", "1"); // HARDCODED, MUST BE CHANGED WHEN THE INTEGRATION IS ALMOST COMPLETE.
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -59,6 +69,7 @@ const ProfileScreen = ({ navigation }) => {
           address: applicant.registrant?.address,
           contact: applicant.registrant?.contact_number,
           username: applicant.registrant?.user_name,
+          password: applicant.registrant?.password,
 
           birthDate: applicant.registrant_birth_date,
           civilStatus: applicant.registrant_civil_status,
@@ -71,12 +82,25 @@ const ProfileScreen = ({ navigation }) => {
           stallLocation: applicant.stall?.stall_location,
           stallDescription: applicant.stall?.description,
           subscriptionEnd: subscriptionDate.toLocaleDateString(),
+
+          spouseName: applicant.spouse_information?.spouse_full_name,
+          spouseBirthDate: applicant.spouse_information?.spouse_birth_date,
+          spouseEducation:
+            applicant.spouse_information?.spouse_educational_attainment,
+          spouseOccupation: applicant.spouse_information?.spouse_occupation,
+          children: applicant.spouse_information?.names_of_children || [],
         });
       }
-    };
+    } catch (error) {
+      console.error("Error in fetchProfileData:", error);
+    }
+  };
 
-    fetchProfileData();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchProfileData();
+    }, [])
+  );
 
   if (!profileData) {
     return (
@@ -120,7 +144,7 @@ const ProfileScreen = ({ navigation }) => {
         <Text style={styles.label}>Address: {profileData.address}</Text>
         <Text style={styles.label}>Contact Number: {profileData.contact}</Text>
         <Text style={styles.label}>Username: {profileData.username}</Text>
-        <Text style={styles.label}>Password: **********</Text>
+        <Text style={styles.label}>Password: {profileData.password}</Text>
 
         <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
           Application Information
@@ -149,6 +173,28 @@ const ProfileScreen = ({ navigation }) => {
         <Text style={styles.label}>Location: {profileData.stallLocation}</Text>
         <Text style={styles.label}>
           Description: {profileData.stallDescription}
+        </Text>
+
+        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
+          Spouse Information
+        </Text>
+        <Text style={styles.label}>
+          Name: {profileData.spouseName || "N/A"}
+        </Text>
+        <Text style={styles.label}>
+          Birth Date: {profileData.spouseBirthDate || "N/A"}
+        </Text>
+        <Text style={styles.label}>
+          Education: {profileData.spouseEducation || "N/A"}
+        </Text>
+        <Text style={styles.label}>
+          Occupation: {profileData.spouseOccupation || "N/A"}
+        </Text>
+        <Text style={styles.label}>
+          Children:{" "}
+          {profileData.children.length > 0
+            ? profileData.children.join(", ")
+            : "None"}
         </Text>
 
         <Text style={[styles.sectionTitle, { marginTop: 20 }]}>

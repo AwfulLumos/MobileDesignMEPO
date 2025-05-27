@@ -12,85 +12,36 @@ import {
 } from "react-native";
 
 import { useNavigation } from "@react-navigation/native";
-
-const transactions = [
-  {
-    id: "1",
-    amount: "₱1,500",
-    date: "03/15/25",
-    status: "Paid",
-    type: "Physical",
-  },
-  {
-    id: "2",
-    amount: "₱1,500",
-    date: "02/15/25",
-    status: "Paid",
-    type: "Physical",
-  },
-  {
-    id: "3",
-    amount: "₱1,500",
-    date: "01/15/25",
-    status: "Paid",
-    type: "Physical",
-  },
-  {
-    id: "4",
-    amount: "₱1,500",
-    date: "01/15/25",
-    status: "Paid",
-    type: "Physical",
-  },
-  {
-    id: "5",
-    amount: "₱1,500",
-    date: "01/15/25",
-    status: "Paid",
-    type: "Physical",
-  },
-];
-
-const announcements = [
-  {
-    id: "1",
-    title: "📢 New Lease & Tenant Management System Now Live!",
-    text: "Dear Tenants, We are pleased to introduce our new Lease and Tenant Management System. You can now View and manage your lease details Receive payment reminders Submit maintenance requests Access important documents Please ensure your contact details are updated to receive notifications. For assistance, contact our support team. Thank you for your cooperation!",
-  },
-  {
-    id: "2",
-    title: "📄 Your Important Papers Are Now Easier to Reach!",
-    text: "We've made it so you can see your important documents whenever you need them, from wherever you are. Whether you're at your desk, out and about, or working from home, you can get to your files with just a few clicks. It's now much easier to find the information you need, when you need it.",
-  },
-  {
-    id: "3",
-    title: "📝 Payment Reminders",
-    text: "Receive payment reminders and submit maintenance requests easily!",
-  },
-];
+import supabase from "../supabaseClient";
 
 const DashboardScreen = () => {
+  const [payments, setPayments] = useState([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  const animation = useRef(new Animated.Value(0)).current;
-  const navigation = useNavigation();
-
-  const toggleDescription = () => {
-    Animated.timing(animation, {
-      toValue: isExpanded ? 0 : 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-    setIsExpanded(!isExpanded);
-  };
-
-  const maxHeight = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 100],
-  });
-
-  const fadeAnim = useRef(new Animated.Value(1)).current;
   const [currentAnnouncementIndex, setCurrentAnnouncementIndex] = useState(0);
 
+  const navigation = useNavigation();
+  const animation = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Fetch payments from Supabase
+  useEffect(() => {
+    const fetchPayments = async () => {
+      const { data, error } = await supabase
+        .from("payment")
+        .select("*")
+        .order("payment_date", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching payments:", error);
+      } else {
+        setPayments(data);
+      }
+    };
+
+    fetchPayments();
+  }, []);
+
+  // Announcement carousel logic
   useEffect(() => {
     const intervalId = setInterval(() => {
       Animated.timing(fadeAnim, {
@@ -112,11 +63,43 @@ const DashboardScreen = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  const toggleDescription = () => {
+    Animated.timing(animation, {
+      toValue: isExpanded ? 0 : 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    setIsExpanded(!isExpanded);
+  };
+
+  const maxHeight = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 100],
+  });
+
+  const announcements = [
+    {
+      id: "1",
+      title: "📢 New Lease & Tenant Management System Now Live!",
+      text: "Dear Tenants, We are pleased to introduce our new Lease and Tenant Management System. You can now View and manage your lease details Receive payment reminders Submit maintenance requests Access important documents Please ensure your contact details are updated to receive notifications. For assistance, contact our support team. Thank you for your cooperation!",
+    },
+    {
+      id: "2",
+      title: "📄 Your Important Papers Are Now Easier to Reach!",
+      text: "We've made it so you can see your important documents whenever you need them, from wherever you are. Whether you're at your desk, out and about, or working from home, you can get to your files with just a few clicks. It's now much easier to find the information you need, when you need it.",
+    },
+    {
+      id: "3",
+      title: "📝 Payment Reminders",
+      text: "Receive payment reminders and submit maintenance requests easily!",
+    },
+  ];
+
   const currentAnnouncement = announcements[currentAnnouncementIndex];
 
   return (
     <ScrollView style={styles.container}>
-      {/* Dashboard Title and Collapsible Description */}
+      {/* Dashboard Header */}
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Dashboard</Text>
         <TouchableOpacity
@@ -137,6 +120,7 @@ const DashboardScreen = () => {
         </Animated.View>
       </View>
 
+      {/* Cards */}
       <View style={styles.cardsContainer}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Lease Duration</Text>
@@ -153,10 +137,13 @@ const DashboardScreen = () => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Monthly Rent Payment</Text>
           <View style={styles.divider} />
-          <Text style={styles.cardValue}>₱1,500</Text>
+          <Text style={styles.cardValue}>
+            {payments.length > 0
+              ? `₱${parseFloat(payments[0].payment_amount).toLocaleString()}`
+              : "₱0"}
+          </Text>
         </View>
 
-        {/* Clickable "Document Submitted" Card */}
         <TouchableOpacity
           style={styles.card}
           onPress={() => navigation.navigate("Documents")}
@@ -167,6 +154,7 @@ const DashboardScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Transactions Table */}
       <View style={styles.tableContainer}>
         <Text style={styles.tableTitle}>Recent Transactions</Text>
         <View style={styles.tableHeader}>
@@ -177,19 +165,22 @@ const DashboardScreen = () => {
         </View>
 
         <FlatList
-          data={transactions}
-          keyExtractor={(item) => item.id}
+          data={payments}
+          keyExtractor={(item) => item.payment_id.toString()}
           renderItem={({ item }) => (
             <View style={styles.tableRow}>
-              <Text style={styles.rowText}>{item.amount}</Text>
-              <Text style={styles.rowText}>{item.date}</Text>
-              <Text style={styles.rowText}>{item.status}</Text>
-              <Text style={styles.rowText}>{item.type}</Text>
+              <Text style={styles.rowText}>
+                ₱{parseFloat(item.payment_amount).toLocaleString()}
+              </Text>
+              <Text style={styles.rowText}>{item.payment_date}</Text>
+              <Text style={styles.rowText}>{item.payment_status}</Text>
+              <Text style={styles.rowText}>{item.payment_type}</Text>
             </View>
           )}
         />
       </View>
 
+      {/* Announcements */}
       <View style={styles.announcementContainer}>
         <Text style={styles.announcementTitle}>Announcements</Text>
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -228,7 +219,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerContainer: {
-    backgroundColor: "#6200ea",
+    backgroundColor: "#002181",
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderRadius: 5,
@@ -270,7 +261,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   card: {
-    backgroundColor: "#002181",
+    backgroundColor: "#28a745",
     padding: 15,
     borderRadius: 5,
     width: "48%",
