@@ -19,6 +19,7 @@ const EditProfileScreen = ({ navigation, route }) => {
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -30,6 +31,7 @@ const EditProfileScreen = ({ navigation, route }) => {
       setAddress(profile.address || "");
       setContact(profile.contact || "");
       setUsername(profile.username || "");
+      setEmail(profile.email || "");
       setPassword(profile.password || "");
     }
   }, [profile]);
@@ -50,6 +52,7 @@ const EditProfileScreen = ({ navigation, route }) => {
           address: address,
           contact_number: contact,
           user_name: username,
+          email: email,
           password: password,
         })
         .eq("registration_id", "1");
@@ -93,6 +96,16 @@ const EditProfileScreen = ({ navigation, route }) => {
           placeholder="Full Name"
           value={name}
           onChangeText={setName}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
         />
       </View>
 

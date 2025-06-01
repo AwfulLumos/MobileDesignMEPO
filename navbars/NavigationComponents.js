@@ -11,14 +11,17 @@ import supabase from "../supabaseClient";
 import DashboardScreen from "../components/DashboardScreen";
 import DocumentScreen from "../components/DocumentScreen";
 import AuctionScreen from "../components/AuctionScreen";
+import YourStallsScreen from "../components/YourStallsScreen";
+import { useAuth } from "../contexts/AuthContext";
 
 const Tab = createBottomTabNavigator();
 
-// Function to get icon name based on route
 export const getTabIcon = (routeName) => {
   switch (routeName) {
     case "Dashboard":
       return "view-dashboard";
+    case "Your Stalls":
+      return "storefront-outline";
     case "Documents":
       return "file-document";
     case "i-Message":
@@ -53,6 +56,7 @@ export const BottomTabs = () => (
     })}
   >
     <Tab.Screen name="Dashboard" component={DashboardScreen} />
+    <Tab.Screen name="Your Stalls" component={YourStallsScreen} />
     <Tab.Screen name="Documents" component={DocumentScreen} />
     <Tab.Screen name="Auction" component={AuctionScreen} />
   </Tab.Navigator>
@@ -60,7 +64,7 @@ export const BottomTabs = () => (
 
 export const DrawerContent = (props) => {
   const [fullName, setFullName] = useState("Loading...");
-
+  const { logout } = useAuth();
   useEffect(() => {
     const fetchRegistrantName = async () => {
       const { data, error } = await supabase
@@ -167,7 +171,7 @@ export const DrawerContent = (props) => {
             marginBottom: 20,
             alignItems: "center",
           }}
-          onPress={() => console.log("Logout pressed")}
+          onPress={logout}
         >
           <Text style={{ color: "white", fontSize: 14, fontWeight: "bold" }}>
             Logout

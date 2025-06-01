@@ -7,46 +7,55 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import supabase from "../supabaseClient";
 import { useFocusEffect } from "@react-navigation/native";
+import { useAuth } from "../contexts/AuthContext";
 
 const ProfileScreen = ({ navigation }) => {
   const [profileData, setProfileData] = useState(null);
+  const { user } = useAuth();
 
-  // Extract the fetch function so it can be reused
   const fetchProfileData = async () => {
     try {
+      if (!user || !user.registrationId) {
+        console.error("No authenticated user or registration ID found");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("applicant")
         .select(
           `
-    *,
-    registrant!fk_applicant_registration (
-    registration_id,
-    full_name,
-    address,
-    contact_number,
-    user_name,
-    password
-    ),
-    stall (
-      stall_no,
-      stall_location,
-      description,
-      auction_date
-    ),
-    spouse_information (
-      spouse_full_name,
-      spouse_birth_date,
-      spouse_educational_attainment,
-      spouse_occupation,
-      names_of_children
-    )
-  `
+      *,
+      registrant!fk_applicant_registration (
+        registration_id,
+        full_name,
+        address,
+        contact_number,
+        user_name,
+        email,
+        password
+      ),
+      stall (
+        stall_no,
+        stall_location,
+        description,
+        auction_date
+      ),
+      spouse_information (
+        spouse_full_name,
+        spouse_birth_date,
+        spouse_educational_attainment,
+        spouse_occupation,
+        names_of_children
+      )
+    `
         )
-        .eq("registration_id", "1"); // HARDCODED, MUST BE CHANGED WHEN THE INTEGRATION IS ALMOST COMPLETE.
+        .eq("registration_id", user.registrationId);
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -56,19 +65,13 @@ const ProfileScreen = ({ navigation }) => {
       if (data && data.length > 0) {
         const applicant = data[0];
 
-        // Simulate subscription valid until +1 year after auction
-        const auctionDate = new Date(
-          applicant.stall?.auction_date || new Date()
-        );
-        const subscriptionDate = new Date(auctionDate);
-        subscriptionDate.setFullYear(auctionDate.getFullYear() + 1);
-
         setProfileData({
           registrant_id: applicant.registrant?.id,
           name: applicant.registrant?.full_name,
           address: applicant.registrant?.address,
           contact: applicant.registrant?.contact_number,
           username: applicant.registrant?.user_name,
+          email: applicant.registrant?.email,
           password: applicant.registrant?.password,
 
           birthDate: applicant.registrant_birth_date,
@@ -81,7 +84,6 @@ const ProfileScreen = ({ navigation }) => {
           stallNo: applicant.stall?.stall_no,
           stallLocation: applicant.stall?.stall_location,
           stallDescription: applicant.stall?.description,
-          subscriptionEnd: subscriptionDate.toLocaleDateString(),
 
           spouseName: applicant.spouse_information?.spouse_full_name,
           spouseBirthDate: applicant.spouse_information?.spouse_birth_date,
@@ -90,6 +92,9 @@ const ProfileScreen = ({ navigation }) => {
           spouseOccupation: applicant.spouse_information?.spouse_occupation,
           children: applicant.spouse_information?.names_of_children || [],
         });
+      } else {
+        console.log("No profile data found for this user");
+        setProfileData(null);
       }
     } catch (error) {
       console.error("Error in fetchProfileData:", error);
@@ -99,183 +104,347 @@ const ProfileScreen = ({ navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       fetchProfileData();
-    }, [])
+    }, [user])
   );
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Please log in to view profile</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!profileData) {
     return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center", marginTop: 220 }}>Loading...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.profileHeader}>
-        <Image
-          source={{
-            uri: "https://i.gifer.com/origin/c8/c8d864187433ac0cc77a5a2e057d52d4_w200.gif",
-          }}
-          style={styles.profileImage}
-        />
-        <Text style={styles.profileName}>{profileData.name}</Text>
-        <Text style={styles.profileRole}>Satellite Market Stallholder</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
+        {/* Header */}
+        <View style={styles.profileHeader}>
+          <View style={styles.profileImageContainer}>
+            <Image
+              source={{
+                uri: "https://i.gifer.com/origin/c8/c8d864187433ac0cc77a5a2e057d52d4_w200.gif",
+              }}
+              style={styles.profileImage}
+            />
+          </View>
+          <Text style={styles.profileName}>{profileData.name}</Text>
+          <Text style={styles.profileRole}>Satellite Market Stallholder</Text>
 
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() =>
-            navigation.navigate("Profile", {
-              screen: "EditProfile",
-              params: { profileData },
-            })
-          }
-        >
-          <Icon name="pencil" size={18} color="#ffffff" />
-          <Text style={styles.editButtonText}>Edit Profile</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() =>
+              navigation.navigate("Profile", {
+                screen: "EditProfile",
+                params: { profileData },
+              })
+            }
+          >
+            <Icon name="pencil" size={18} color="#ffffff" />
+            <Text style={styles.editButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Profile Data */}
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>Registration Information</Text>
-        <Text style={styles.label}>Full Name: {profileData.name}</Text>
-        <Text style={styles.label}>Address: {profileData.address}</Text>
-        <Text style={styles.label}>Contact Number: {profileData.contact}</Text>
-        <Text style={styles.label}>Username: {profileData.username}</Text>
-        <Text style={styles.label}>Password: {profileData.password}</Text>
+        {/* Registration Information */}
+        <View style={styles.infoCard}>
+          <View style={styles.sectionHeader}>
+            <Icon name="account-card-details" size={24} color="#3700b3" />
+            <Text style={styles.sectionTitle}>Registration Information</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Full Name:</Text>
+            <Text style={styles.value}>{profileData.name}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Email:</Text>
+            <Text style={styles.value}>{profileData.email}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Address:</Text>
+            <Text style={styles.value}>{profileData.address}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Contact Number:</Text>
+            <Text style={styles.value}>{profileData.contact}</Text>
+          </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
-          Application Information
-        </Text>
-        <Text style={styles.label}>Birth Date: {profileData.birthDate}</Text>
-        <Text style={styles.label}>
-          Civil Status: {profileData.civilStatus}
-        </Text>
-        <Text style={styles.label}>
-          Educational Attainment: {profileData.education}
-        </Text>
-        <Text style={styles.label}>
-          Nature of Business: {profileData.businessNature}
-        </Text>
-        <Text style={styles.label}>
-          Capitalization: ₱{profileData.capitalization}
-        </Text>
-        <Text style={styles.label}>
-          Source of Capital: {profileData.sourceOfCapital}
-        </Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Username:</Text>
+            <Text style={styles.value}>{profileData.username}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Password:</Text>
+            <Text style={styles.value}>{"*".repeat(8)}</Text>
+          </View>
+        </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
-          Stall Information
-        </Text>
-        <Text style={styles.label}>Stall No: {profileData.stallNo}</Text>
-        <Text style={styles.label}>Location: {profileData.stallLocation}</Text>
-        <Text style={styles.label}>
-          Description: {profileData.stallDescription}
-        </Text>
+        {/* Application Information */}
+        <View style={styles.infoCard}>
+          <View style={styles.sectionHeader}>
+            <Icon name="file-document" size={24} color="#3700b3" />
+            <Text style={styles.sectionTitle}>Application Information</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Birth Date:</Text>
+            <Text style={styles.value}>{profileData.birthDate || "N/A"}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Civil Status:</Text>
+            <Text style={styles.value}>{profileData.civilStatus || "N/A"}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Educational Attainment:</Text>
+            <Text style={styles.value}>{profileData.education || "N/A"}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Nature of Business:</Text>
+            <Text style={styles.value}>
+              {profileData.businessNature || "N/A"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Capitalization:</Text>
+            <Text style={styles.value}>
+              {profileData.capitalization
+                ? `₱${profileData.capitalization}`
+                : "N/A"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Source of Capital:</Text>
+            <Text style={styles.value}>
+              {profileData.sourceOfCapital || "N/A"}
+            </Text>
+          </View>
+        </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
-          Spouse Information
-        </Text>
-        <Text style={styles.label}>
-          Name: {profileData.spouseName || "N/A"}
-        </Text>
-        <Text style={styles.label}>
-          Birth Date: {profileData.spouseBirthDate || "N/A"}
-        </Text>
-        <Text style={styles.label}>
-          Education: {profileData.spouseEducation || "N/A"}
-        </Text>
-        <Text style={styles.label}>
-          Occupation: {profileData.spouseOccupation || "N/A"}
-        </Text>
-        <Text style={styles.label}>
-          Children:{" "}
-          {profileData.children.length > 0
-            ? profileData.children.join(", ")
-            : "None"}
-        </Text>
+        {/* Stall Information */}
+        <View style={styles.infoCard}>
+          <View style={styles.sectionHeader}>
+            <Icon name="store" size={24} color="#3700b3" />
+            <Text style={styles.sectionTitle}>Stall Information</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Stall No:</Text>
+            <Text style={styles.value}>{profileData.stallNo || "N/A"}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Location:</Text>
+            <Text style={styles.value}>
+              {profileData.stallLocation || "N/A"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Description:</Text>
+            <Text style={styles.value}>
+              {profileData.stallDescription || "N/A"}
+            </Text>
+          </View>
+        </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
-          Subscription Details
-        </Text>
-        <Text style={styles.label}>
-          Valid Until: {profileData.subscriptionEnd}
-        </Text>
-      </View>
-    </ScrollView>
+        {/* Spouse Information */}
+        <View style={styles.infoCard}>
+          <View style={styles.sectionHeader}>
+            <Icon name="account-heart" size={24} color="#3700b3" />
+            <Text style={styles.sectionTitle}>Spouse Information</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Name:</Text>
+            <Text style={styles.value}>{profileData.spouseName || "N/A"}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Birth Date:</Text>
+            <Text style={styles.value}>
+              {profileData.spouseBirthDate || "N/A"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Education:</Text>
+            <Text style={styles.value}>
+              {profileData.spouseEducation || "N/A"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Occupation:</Text>
+            <Text style={styles.value}>
+              {profileData.spouseOccupation || "N/A"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Children:</Text>
+            <Text style={styles.value}>
+              {profileData.children.length > 0
+                ? profileData.children.join(", ")
+                : "None"}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  profileHeader: {
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#002181",
-    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "500",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    paddingBottom: 30,
+  },
+  profileHeader: {
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    paddingVertical: 30,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 50,
-    borderBottomRightRadius: 50,
+    marginBottom: 15,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
   },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 55,
-    borderWidth: 3,
-    borderColor: "#fff",
-    marginBottom: 10,
-  },
-  profileName: { fontSize: 17, fontWeight: "bold", color: "#fff" },
-  profileRole: { fontSize: 14, color: "#e0e0e0", marginTop: 4 },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#6200ea",
-    marginBottom: 10,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 8,
-    color: "#333",
-    lineHeight: 22,
-    paddingLeft: 10,
-  },
-  infoCard: {
-    backgroundColor: "#f8f8f8",
-    borderRadius: 10,
-    padding: 15,
-    marginHorizontal: 15,
-    marginTop: 20,
-    marginBottom: 20,
+  profileImageContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
     elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  profileImage: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  profileRole: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 20,
   },
   editButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#28a745",
+    backgroundColor: "#3700b3",
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 20,
-    marginVertical: 20,
-    marginHorizontal: 20,
-    alignSelf: "center",
+    borderRadius: 25,
     elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   editButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    marginLeft: 5,
+    color: "#ffffff",
+    fontSize: 16,
     fontWeight: "600",
+    marginLeft: 8,
+  },
+  infoCard: {
+    backgroundColor: "#ffffff",
+    marginHorizontal: 15,
+    marginBottom: 15,
+    borderRadius: 12,
+    padding: 20,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 12,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#f1f3f4",
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#555",
+    flex: 1,
+    marginRight: 10,
+  },
+  value: {
+    fontSize: 14,
+    color: "#333",
+    flex: 2,
+    textAlign: "right",
+    flexWrap: "wrap",
   },
 });
 

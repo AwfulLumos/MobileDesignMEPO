@@ -1,5 +1,5 @@
 /* eslint-disable import/no-unresolved */
-import React from "react";
+import React, { useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import {
@@ -18,14 +18,17 @@ import NotificationScreen from "./components/NotificationScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import EditProfileScreen from "./components/EditProfileScreen";
 import IMessageScreen from "./components/IMessageScreen";
+import LoginScreen from "./components/LoginScreen";
 
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Navigation containers
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
-const ProfileStack = createStackNavigator(); // stack for Profile
+const ProfileStack = createStackNavigator();
 const MessageStack = createStackNavigator();
+const AuthStack = createStackNavigator(); // Add this for authentication screens
 
 const MessageStackNavigator = () => (
   <MessageStack.Navigator>
@@ -57,7 +60,7 @@ const ProfileStackNavigator = () => (
       name="ProfileMain"
       component={ProfileScreen}
       options={({ navigation }) => ({
-        headerShown: false, // header na may lapis to kanina.
+        headerShown: true,
         headerTitle: "Profile",
         headerTitleAlign: "center",
         headerLeft: () => (
@@ -68,26 +71,32 @@ const ProfileStackNavigator = () => (
             <Icon name="menu" size={24} color="#000" />
           </TouchableOpacity>
         ),
-        headerRight: () => (
-          <TouchableOpacity
-            style={{ marginRight: 15 }}
-            onPress={() => navigation.navigate("EditProfile")}
-          >
-            <Icon name="pencil" size={24} color="#000" />
-          </TouchableOpacity>
-        ),
       })}
     />
     <ProfileStack.Screen
       name="EditProfile"
       component={EditProfileScreen}
       options={{
-        headerShown: false,
+        headerShown: true,
         headerTitle: "Edit Profile",
         headerTitleAlign: "center",
       }}
     />
   </ProfileStack.Navigator>
+);
+
+// Authentication Stack Navigator
+const AuthStackNavigator = () => (
+  <AuthStack.Navigator>
+    <AuthStack.Screen
+      name="Login"
+      component={LoginScreen}
+      options={{
+        headerShown: false,
+      }}
+    />
+    {/* Add other auth screens here if needed (Register, ForgotPassword, etc.) */}
+  </AuthStack.Navigator>
 );
 
 // Main Stack Navigator
@@ -151,52 +160,63 @@ const MainStack = () => (
   </Stack.Navigator>
 );
 
+// Drawer Navigator
+const DrawerNavigator = () => (
+  <Drawer.Navigator
+    screenOptions={{
+      headerShown: false,
+      drawerStyle: {
+        width: 220,
+        backgroundColor: "#3700b3",
+      },
+      drawerActiveTintColor: "#bb86fc",
+      drawerInactiveTintColor: "#ffffff",
+      drawerLabelStyle: {
+        fontSize: 16,
+        fontWeight: "bold",
+      },
+      drawerItemStyle: {
+        borderRadius: 0,
+        marginHorizontal: 0,
+      },
+    }}
+    drawerContent={(props) => <DrawerContent {...props} />}
+  >
+    <Drawer.Screen name="Dashboard" component={MainStack} />
+    <Drawer.Screen name="Profile" component={ProfileStackNavigator} />
+    <Drawer.Screen name="i-Message" component={MessageStackNavigator} />
+  </Drawer.Navigator>
+);
+
+// Main App Navigation Component
+const AppNavigator = () => {
+  const { isLoggedIn, isLoading } = useAuth();
+
+  if (isLoading) {
+    // You can add a loading screen here
+    return null;
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isLoggedIn ? (
+          <Stack.Screen name="Main" component={DrawerNavigator} />
+        ) : (
+          <Stack.Screen name="Auth" component={AuthStackNavigator} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
 // Main App Navigation
 export default function App() {
   return (
-    <NotificationProvider>
-      <NavigationContainer>
-        {/* Drawer is now the root navigator */}
-        <Drawer.Navigator
-          screenOptions={{
-            headerShown: false,
-            drawerStyle: {
-              width: 220,
-              backgroundColor: "#3700b3",
-            },
-            drawerActiveTintColor: "#bb86fc",
-            drawerInactiveTintColor: "#ffffff",
-            drawerLabelStyle: {
-              fontSize: 16,
-              fontWeight: "bold",
-            },
-            drawerItemStyle: {
-              borderRadius: 0,
-              marginHorizontal: 0,
-            },
-          }}
-          drawerContent={(props) => <DrawerContent {...props} />}
-        >
-          {/* Main Stack (Tabs + Modal Screens) */}
-          <Drawer.Screen name="Dashboard" component={MainStack} />
-
-          {/* Profile Screen with its own stack for EditProfile */}
-          <Drawer.Screen
-            name="Profile"
-            component={ProfileStackNavigator}
-            options={{
-              headerShown: true,
-            }}
-          />
-          <Drawer.Screen
-            name="i-Message"
-            component={MessageStackNavigator}
-            options={{
-              headerShown: false,
-            }}
-          />
-        </Drawer.Navigator>
-      </NavigationContainer>
-    </NotificationProvider>
+    <AuthProvider>
+      <NotificationProvider>
+        <AppNavigator />
+      </NotificationProvider>
+    </AuthProvider>
   );
 }
